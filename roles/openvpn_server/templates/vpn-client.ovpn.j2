@@ -1,0 +1,20 @@
+client
+dev tap
+proto udp
+remote {{ vpn_remote_ip }} {{ vpn_port }}
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+comp-lzo
+cipher {{ vpn_cipher }}
+verb 3
+explicit-exit-notify 3
+
+ca "{{ vpn_cert_ca }}"
+tls-auth "{{ vpn_cert_auth }}" 1
+remote-cert-tls server
+verify-x509-name {{ ansible_hostname }} name
+cert "{{ vpn_client_name }}.crt"
+key "{{ vpn_client_name }}.key"
+

@@ -1,0 +1,37 @@
+## VPN settings
+vpn_name: 'vpn-server'
+vpn_server_name: 'vpn.lab.lan'
+vpn_conf_name: 'vpn-server.conf'
+vpn_remote_ip: '172.30.13.107'
+vpn_port: '1194'
+vpn_dev: 'tap'
+vpn_cipher: 'AES-256-CBC'
+vpn_subnet: '10.10.1.0 255.255.255.0'
+vpn_max_clients: '10'
+vpn_conn_clients: 'yes'
+
+## Easy-RSA settings
+rsa_country: 'ES' 
+rsa_prov: 'Spain'
+rsa_city: 'Madrid'
+rsa_org: "{{ ansible_hostname }}"
+rsa_email: 'admin@test.lan'
+rsa_ou: 'SysAdmins'
+rsa_ca_name: 'Test CA'
+rsa_ca_max_days: '365'
+rsa_cert_max_days: '365'
+
+## Server Certificates
+vpn_cert_ca: 'ca.crt'
+vpn_cert_server: 'debian-vpn.crt'
+vpn_cert_server_key: 'debian-vpn.key'
+vpn_cert_dh: 'dh2048.pem'
+vpn_cert_auth: 'ta.key'
+
+## Client Certificates
+vpn_client_name: 'laptop01'
+
+## Extra configurations
+iptables: 'no'
+firewalld: 'yes'
+firewalld_zone: 'dmz'

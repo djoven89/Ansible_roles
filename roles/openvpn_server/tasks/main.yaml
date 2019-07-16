@@ -1,0 +1,178 @@
+---
+
+- name: Installing OpenVPN packages
+  apt:
+    name:
+      - openvpn
+      - easy-rsa
+    state: latest
+    force_apt_get: yes
+    update_cache: yes
+
+- name: Creating the log directory
+  file:
+    name: "/var/log/openvpn/"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Creating the 'easy-rsa' directory
+  file:
+    name: "/etc/openvpn/server/easy-rsa/"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Copying the 'easy-rsa' script to manage the certificates
+  copy:
+    src: "/usr/share/easy-rsa/"
+    dest: "/etc/openvpn/server/easy-rsa/"
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Getting OpenSSL version
+  shell: "openssl version | awk '{print $2}'"
+  register: openssl_version
+
+- name: Checking if the configuration file 'openssl.cnf' exists
+  find:
+    paths: "/etc/openvpn/server/easy-rsa/"
+    patterns: "openssl.cnf"
+    file_type: file
+  register: openssl_conf
+
+- name: Creating a link for default openssl configuration file
+  file:
+    src: "/etc/openvpn/server/easy-rsa/openssl-1.0.0.cnf"
+    dest: "/etc/openvpn/server/easy-rsa/openssl.cnf"
+    state: link
+  when: 
+    - openssl_conf['matched'] == 0
+    - openssl_version['stdout'] is match("1.1.0k")
+
+- name: Setting the variables of the certificates configuration
+  replace:
+    path: "/etc/openvpn/server/easy-rsa/vars"
+    regexp: "{{ item.regex }}"
+    replace: "{{ item.repl }}"
+  with_items:
+    - { regex: 'KEY_COUNTRY=.*', repl: 'KEY_COUNTRY="{{ rsa_country }}"' }
+    - { regex: 'KEY_PROVINCE=.*', repl: 'KEY_PROVINCE="{{ rsa_prov }}"' }
+    - { regex: 'KEY_CITY=.*', repl: 'KEY_CITY="{{ rsa_city }}"' }
+    - { regex: 'KEY_ORG=.*', repl: 'KEY_ORG="{{ rsa_org }}"' }
+    - { regex: 'KEY_EMAIL=.*', repl: 'KEY_EMAIL="{{ rsa_email }}"' }
+    - { regex: 'KEY_OU=.*', repl: 'KEY_OU="{{ rsa_ou }}"' }
+    - { regex: 'KEY_NAME=.*', repl: 'KEY_NAME="{{ rsa_ca_name }}"' }
+    - { regex: 'CA_EXPIRE=.*', repl: 'CA_EXPIRE="{{ rsa_ca_max_days }}"' }
+    - { regex: 'KEY_EXPIRE=.*', repl: 'KEY_EXPIRE="{{ rsa_cert_max_days }}"' }
+
+- name: Creating the CA
+  shell: |
+    . ./vars
+    . ./clean-all
+    ./pkitool --initca
+  args:
+    chdir: "/etc/openvpn/server/easy-rsa/"
+
+- name: Creating the server certificate
+  shell: |
+    . ./vars
+    ./pkitool --server {{ ansible_hostname }}
+  args:
+    chdir: "/etc/openvpn/server/easy-rsa/"
+
+- name: Creating the DH certificate
+  shell: |
+    . ./vars
+    $OPENSSL dhparam -out ${KEY_DIR}/dh${KEY_SIZE}.pem ${KEY_SIZE}
+  args:
+    chdir: "/etc/openvpn/server/easy-rsa/"
+
+- name: Creating a auth key
+  shell: "openvpn --genkey --secret /etc/openvpn/server/easy-rsa/keys/ta.key"
+
+- name: Creating an empty crl file
+  file:
+    name: "/etc/openvpn/server/easy-rsa/keys/crl.pem"
+    state: touch
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Copying the VPN configuration
+  template:
+    src: server.conf.j2
+    dest: "/etc/openvpn/server/vpn-server.conf"
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Setting the proper permissions for key files
+  command: find /etc/openvpn/server/easy-rsa/keys -type f -iname "*.key" -exec chmod 0400 {} \;
+
+- name: Setting the proper permissions for certifications
+  command: find /etc/openvpn/server/easy-rsa/keys -type f -iname "*.pem" -exec chmod 0600 {} \;
+
+- name: Setting the proper permissions for crl file
+  command: find /etc/openvpn/server/easy-rsa/keys -type f -iname "crl.pem" -exec chmod 0755 {} \;
+
+- name: Deleting csr files
+  command: find /etc/openvpn/server/easy-rsa/keys -type f -iname "*csr" -exec rm {} \;
+
+- name: Adding restarted parameters to VPN daemon
+  lineinfile:
+    path: /lib/systemd/system/openvpn-server@.service
+    regexp: "{{ item.src }}"
+    line: "{{ item.line }}"
+    insertafter: '^ExecStart.*'
+  with_items:
+    - { src: "Restart=.*", line: "Restart=on-failure" }
+    - { src: "RestartSec=.*", line: "RestartSec=30" }
+
+- name: Starting and enabling the VPN
+  systemd:
+    name: "openvpn-server@{{ vpn_name }}"
+    state: started
+    daemon_reload: yes
+    enabled: true
+
+- name: Creating the client configuration directory
+  file:
+    name: "/etc/openvpn/server/conf_clients/"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Creating the client certificate
+  shell: |
+    . ./vars
+    ./pkitool {{ vpn_client_name }}
+  args:
+    chdir: "/etc/openvpn/server/easy-rsa/"
+
+- name: Copying the certificates to the client configuration directory
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/openvpn/server/conf_clients/"
+    owner: root
+    group: root
+    remote_src: yes
+  with_items:
+    - "/etc/openvpn/server/easy-rsa/keys/{{ vpn_cert_ca }}"
+    - "/etc/openvpn/server/easy-rsa/keys/{{ vpn_client_name }}.key"
+    - "/etc/openvpn/server/easy-rsa/keys/{{ vpn_client_name }}.crt"
+    - "/etc/openvpn/server/easy-rsa/keys/{{ vpn_cert_auth }}"
+
+- name: Copying the OpenVPN client configuration
+  template:
+    src: vpn-client.ovpn.j2
+    dest: "/etc/openvpn/server/conf_clients/vpn-client.conf"
+    owner: root
+    group: root
+    mode: 0755
+
+...

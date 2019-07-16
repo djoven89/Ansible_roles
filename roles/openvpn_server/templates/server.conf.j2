@@ -1,0 +1,63 @@
+##################################
+###  OpenVPN as Server called '{{ vpn_name |upper }}'
+##################################
+
+
+###
+### Daemon settings
+###
+
+local {{ vpn_remote_ip }}
+port {{ vpn_port }}
+proto udp
+dev {{ vpn_dev }}
+user nobody
+group nogroup
+cipher {{ vpn_cipher }}
+persist-key
+persist-tun
+comp-lzo
+keepalive 10 120
+
+
+### 
+### Logs
+###
+
+status /var/log/openvpn/{{ vpn_name }}-status.log
+log-append /var/log/openvpn/{{ vpn_name }}.log
+verb 3
+ifconfig-pool-persist ipp.txt
+
+###
+### Certificates
+###
+
+ca easy-rsa/keys/{{ vpn_cert_ca }}
+cert easy-rsa/keys/{{ vpn_cert_server }}
+key easy-rsa/keys/{{ vpn_cert_server_key }}
+dh easy-rsa/keys/{{ vpn_cert_dh }}
+tls-auth easy-rsa/keys/{{ vpn_cert_auth }} 0
+crl-verify easy-rsa/keys/crl.pem
+
+###
+### Publish network settings
+###
+
+server {{ vpn_subnet }}
+max-clients {{ vpn_max_clients }}
+client-to-client
+# client-config-dir ccd
+
+###
+### Access restrictions
+###
+
+# verify-x509-name vpn-cliente01 name-prefix
+# duplicate-cn
+
+###
+### Private networks
+###
+
+# push "192.168.6.0 255.255.255.0"
