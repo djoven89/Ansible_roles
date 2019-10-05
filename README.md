@@ -24,7 +24,6 @@ This role will configure the latest version of OpenVPN to acts as a secure VPN s
 
 * It will create a Client directory which contains the OpenVPN configuration for the Client side.
 
-</br>
 **- server_settings:**
 
 This role will do some common tasks that a new server requires. Below are a list of the tasks this role does:
@@ -41,5 +40,3 @@ This role will do some common tasks that a new server requires. Below are a list
 
 * Some settings will be added for the history of the root user.
 
-
-- *openvpn_server* -> It will configure and harder a VPN server with OpenVPN software.
