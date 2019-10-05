@@ -1,0 +1,6 @@
+---
+
+server_fqdn: 'node01.lab.lan'
+server_timezone: 'Europe/Madrid'
+
+...

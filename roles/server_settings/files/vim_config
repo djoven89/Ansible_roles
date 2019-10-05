@@ -1,0 +1,8 @@
+color desert
+syntax on
+set number
+set expandtab
+set tabstop=2
+set softtabstop=2
+set shiftwidth=2
+auto FileType yaml,yml setlocal ai ts=2 sw=2 et
