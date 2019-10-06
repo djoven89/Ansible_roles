@@ -1,0 +1,57 @@
+---
+
+- name: Updating the repositories
+  apt:
+    update_cache: yes
+    force_apt_get: yes
+
+- name: Getting if apache2 package is installed
+  shell: "dpkg -l | egrep -q '^ii  apache2 '"
+  register: pkg
+  ignore_errors: yes
+
+- name: Checking apache2 status
+  assert:
+    that:
+      - "pkg['rc'] == 0"
+    success_msg: "Apache installed."
+    fail_msg: "Apache not installed, please, install it."
+
+- name: Adding the required repository for older version than 7.1 or newest versions
+  apt_repository:
+    repo: ppa:ondrej/php
+    state: present
+  when: "php_version == '5.6' or php_version == '7.0' or php_version == '7.1' or php_version == '7.3' or php_version == '7.4'"
+
+- name: "Installing PHP packages for version {{ php_version }}"
+  apt:
+    name:
+      - "php{{ php_version }}"
+      - "php{{ php_version }}-common"
+      - "php{{ php_version }}-gd"
+      - "php{{ php_version }}-mysql"
+      - "php{{ php_version }}-intl"
+      - "php{{ php_version }}-curl"
+      - "php{{ php_version }}-xmlrpc"
+      - "php{{ php_version }}-mbstring"
+      - "php{{ php_version }}-xml"
+      - "php{{ php_version }}-imagick"
+      - "php{{ php_version }}-zip"
+      - "php{{ php_version }}-json"
+      - "libapache2-mod-php{{ php_version }}"
+    state: latest
+    force_apt_get: yes
+
+- name: Adding settings for PHP
+  replace:
+    path: "/etc/php/{{ php_version }}/apache2/php.ini"
+    regexp: "{{ item.option }}" 
+    replace: "{{ item.value }}" 
+    backup: yes
+  with_items:
+    - { option: '^;date\.timezone =', value: "date.timezone = {{ timezone }}" }
+    - { option: 'expose_php = On', value: 'expose_php = Off' }
+    - { option: 'log_errors = Off', value: 'log_errors = On' }
+  notify: apache2 restart
+  
+...

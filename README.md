@@ -4,11 +4,18 @@ Creating Ansible roles for managing a Linux server.
 
 The goal of this repository is to convert common deployment as a LAMP setup for a CMS or improve the security of the server into Ansible roles.
 
+**Considerations:**
+
+* The roles have been created to use in a clean installations.
+* All the roles have been tested on Ubuntu 18.04.
+
+
 ### **Roles released**
 
 - openvpn_server
 - server_settings
 - apache
+- php
 
 
 ### **Description of the released roles**
@@ -50,3 +57,10 @@ This role will install Apache2 and configure a virtualhost for the web site. A s
 * It can create a virtualhost for secure and non secure web sites and also, a redirect virtualhost for HTTP to HTTPs.
 * The secure virtualhost has been hardening.
 
+**- php:**
+
+This role will install PHP, concretely, the action that the role does are:
+
+* This module requires Apache2 package installed.
+* The PHP versions available are: 5.6, 7.0, 7.1, 7.2 and 7.3 .
+* It will hide the PHP version and set the timezone.
