@@ -8,6 +8,7 @@ The goal of this repository is to convert common deployment as a LAMP setup for 
 
 - openvpn_server
 - server_settings
+- apache
 
 
 ### **Description of the released roles**
@@ -39,4 +40,13 @@ This role will do some common tasks that a new server requires. Below are a list
 * The prompt of the root user will be modified to be more legible.
 
 * Some settings will be added for the history of the root user.
+
+**- apache:**
+
+This role will install Apache2 and configure a virtualhost for the web site. A summary of the tasks that this role can do:
+
+* It will install Apache2 and disable the default virtualhost along with the default content directory.
+* It will hide the Apache2's version.
+* It can create a virtualhost for secure and non secure web sites and also, a redirect virtualhost for HTTP to HTTPs.
+* The secure virtualhost has been hardening.
 

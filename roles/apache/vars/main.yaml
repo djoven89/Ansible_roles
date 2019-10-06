@@ -1,0 +1,19 @@
+---
+
+## Type of site
+site_http: "no"
+site_https: "yes"
+site_https_redirect: "yes"
+
+## Site settings
+site_dir: "/var/www"
+site_domain: "lab.lan"
+site_name: "lab"
+site_port: "443"
+site_email: "admin@lab.lan"
+
+## Certification files
+site_cert_file: "/etc/ssl/certs/ssl-cert-snakeoil.pem"
+site_cert_key: "/etc/ssl/private/ssl-cert-snakeoil.key"
+
+...

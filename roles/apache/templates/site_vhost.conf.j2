@@ -1,0 +1,12 @@
+<VirtualHost _default_:{{ site_port }}>
+    DocumentRoot {{ site_dir }}/{{ site_domain }}
+    ServerName {{ site_domain }}
+    DirectoryIndex index.html index.php
+
+   	ErrorLog ${APACHE_LOG_DIR}/http-{{ site_name}}_error.log
+    CustomLog ${APACHE_LOG_DIR}/http-{{ site_name }}_access.log combined
+
+    <Directory "{{ site_dir }}/{{ site_domain }}/">
+        Require all granted
+    </Directory>
+</VirtualHost>

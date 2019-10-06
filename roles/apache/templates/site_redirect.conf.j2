@@ -1,0 +1,7 @@
+<VirtualHost *:80>
+   ServerName {{ site_domain }}
+   Redirect permanent / https://{{ site_domain }}/
+
+    ErrorLog ${APACHE_LOG_DIR}/redirect-{{ site_name}}_error.log
+    CustomLog ${APACHE_LOG_DIR}/redirect-{{ site_name }}_access.log combined
+</VirtualHost>

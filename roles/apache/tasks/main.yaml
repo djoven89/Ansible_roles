@@ -1,0 +1,135 @@
+---
+
+## General tasks for Apache
+- name: Updating the repositories
+  apt:
+    update_cache: yes
+    force_apt_get: yes
+
+- name: Installing Apache2
+  apt:
+    name:
+      - apache2
+    state: latest
+    force_apt_get: yes
+
+- name: Stopping and enabling Apache2
+  systemd:
+    name: apache2
+    state: stopped
+    enabled: yes
+
+- name: Hidding the version of Apache
+  replace:
+    path: /etc/apache2/conf-enabled/security.conf
+    regexp: "{{ item.option }}" 
+    replace: "{{ item.value }}" 
+    backup: yes
+  with_items:
+    - { option: 'ServerSignature On', value: 'ServerSignature Off' }
+    - { option: 'ServerTokens OS', value: 'ServerTokens  Prod' }
+  notify: apache2 restart
+
+- name: Removing the default directory where the index is located
+  file:
+    path: /var/www/html/
+    state: absent
+
+- name: Disabling the default virtualhost
+  shell:  "a2dissite 000-default.conf"
+  notify: apache2 restart
+
+
+## Setting a non secure virtualhost
+- name: Building a non secure site
+  block:
+    - name: "Creating a HTTP VirtualHost for domain {{ site_domain }}"
+      template:
+        src: site_vhost.conf.j2
+        dest: "/etc/apache2/sites-available/http-{{ site_name }}.conf"
+        owner: root
+        group: root
+        mode: 0644
+      notify: apache2 restart
+
+    - name: Adding the port {{ site_port }} to Apache
+      lineinfile:
+        path: /etc/apache2/ports.conf
+        regexp: ".*Listen {{ site_port }}"
+        line: "Listen {{ site_port }}"
+        state: present
+        backup: yes
+      notify: apache2 restart
+
+    - name: Enabling the VirtualHost
+      shell:  "a2ensite http-{{ site_name }}.conf"
+      notify: apache2 restart
+
+    - name: Creating the site directory
+      file:
+        path: "{{ site_dir }}/{{ site_domain }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: 0750
+  when: site_http == "yes"
+
+
+## Setting a secure virtualhost
+- name: Building a secure site
+  block:
+    - name: Installing SSL module
+      apache2_module:
+        name: ssl
+        state: present
+      notify: apache2 restart
+
+    - name: "Creating a HTTPS VirtualHost for domain {{ site_domain }}"
+      template:
+        src: site_secure_vhost.conf.j2
+        dest: "/etc/apache2/sites-available/https-{{ site_name }}.conf"
+        owner: root
+        group: root
+        mode: 0644
+      notify: apache2 restart
+
+    - name: Adding port {{ site_port }} to Apache
+      lineinfile:
+        path: /etc/apache2/ports.conf
+        regexp: "Listen {{ site_port }}"
+        line: "Listen {{ site_port }}"
+        state: present
+        backup: yes
+      notify: apache2 restart
+
+    - name: Enabling the VirtualHost
+      shell:  "a2ensite https-{{ site_name }}.conf"
+      notify: apache2 restart
+
+    - name: Creating the site directory
+      file:
+        path: "{{ site_dir }}/{{ site_domain }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: 0750
+  when: site_https == "yes"
+
+## Redirection setup
+- name: Building a Redirection VirtualHost
+  block:
+    - name: Creating a redirection VirtualHost for port 80
+      template:
+        src: site_redirect.conf.j2
+        dest: "/etc/apache2/sites-available/http-redirect-{{ site_name }}.conf"
+        owner: root
+        group: root
+        mode: 0644
+      notify: apache2 restart
+
+    - name: Enabling the Redirection VirtualHost
+      shell:  "a2ensite http-redirect-{{ site_name }}.conf"
+      notify: apache2 restart
+  when: site_https_redirect == "yes"
+
+...
