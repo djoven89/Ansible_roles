@@ -1,8 +1,19 @@
 ---
 
 - hosts: server
+  gather_facts: yes
+  ignore_errors: no
   
   roles:
-    - openvpn_server
+    ## For server hardening
+    - server_settings
+  
+    ## LAMP stack
+    - apache
+    - php
+    - mariadb
 
+    ## CMS
+    - wordpress
+    
 ...

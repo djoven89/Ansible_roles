@@ -16,6 +16,7 @@ The goal of this repository is to convert common deployment as a LAMP setup for 
 - server_settings
 - apache
 - php
+- reprepro
 
 
 ### **Description of the released roles**
@@ -64,3 +65,23 @@ This role will install PHP, concretely, the action that the role does are:
 * This module requires Apache2 package installed.
 * The PHP versions available are: 5.6, 7.0, 7.1, 7.2 and 7.3 .
 * It will hide the PHP version and set the timezone.
+
+**- mariadb:**
+
+This role will install MariaDB. Below are the actions that the role does:
+
+* It will install MariaDB server package.
+* It will set a password for database 'root' user.
+* Optional the role can create a database with its user or import a SQL file.
+
+**- wordpress:**
+
+This role will download and configure Wordpress. The requirement for this role is:
+
+* Apache, PHP and Mysql have to be installed and configured.
+
+And the action that the role does are the following:
+
+* It will download the version of Wordpress that was defined.
+* A database and its user will be created.
+* The Wordpress site will be created automatically.

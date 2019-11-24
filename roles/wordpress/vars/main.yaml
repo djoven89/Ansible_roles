@@ -1,0 +1,17 @@
+## Database settings
+#db_root_password: "KA+?2U2W"
+db_root_password: "P@ssw0rd!"
+wordpress_db: "db_wordpress"
+wordpress_db_admin: "dba-wp"
+wordpress_db_admin_password: "1"
+wordpress_user: "wpadmin"
+wordpress_user_password: "wpadmin"
+
+## Site settings
+wordpress_file: "https://es.wordpress.org/latest-es_ES.tar.gz"
+wordpress_dir: "/var/www"
+wordpress_domain: "lichking.cf"
+wordpress_ip: "172.30.13.143"
+wordpress_port: "443"
+wordpress_email: "admin@lab.lan"
+wordpress_title: "Wordpress dev"

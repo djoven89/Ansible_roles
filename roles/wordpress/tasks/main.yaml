@@ -1,0 +1,98 @@
+---
+
+- name: Getting if apache2 package is installed
+  shell: "dpkg -l | egrep -q '^ii  apache2 '"
+  register: pkg
+  ignore_errors: yes
+
+- name: Checking apache2 status
+  assert:
+    that:
+      - "pkg['rc'] == 0"
+    success_msg: "Apache installed."
+    fail_msg: "Apache not installed, please, install it."
+
+- name: Getting if Mariadb package is installed
+  shell: "dpkg -l | egrep -q '^ii  mariadb-server '"
+  register: pkg
+  ignore_errors: yes
+
+- name: Checking Mariadb status
+  assert:
+    that:
+      - "pkg['rc'] == 0"
+    success_msg: "Mariadb installed."
+    fail_msg: "Mariadb not installed, please, install it."
+
+- name: Downloading Wordpress
+  unarchive:
+    src: "{{ wordpress_file }}"
+    dest: "{{ wordpress_dir }}"
+    owner: www-data
+    group: www-data
+    mode: 0755
+    remote_src: yes
+
+- name: Moving Wordpress content to the proper directory
+  shell: "mv * {{ wordpress_dir }}/{{ wordpress_domain }}/"
+  args:
+    chdir: "{{ wordpress_dir }}/wordpress/"
+  register: wp_dir
+  failed_when: wp_dir['changed'] == false
+
+- name: Removing default wordpress directory
+  file:
+    path: "{{ wordpress_dir }}/wordpress/"
+    state: absent
+
+- name: Creating the database
+  mysql_db:
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    name: "{{ wordpress_db }}"
+    state: present
+
+- name: Creating the user for the database
+  mysql_user:
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    name: "{{ wordpress_db_admin }}"
+    password: "{{ wordpress_db_admin_password }}"
+    priv: "{{ wordpress_db }}.*:ALL"
+    state: present
+
+- name: Downloading the wp binary for unattended installations
+  get_url:
+    url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+    dest: /usr/local/bin/wp
+    owner: root
+    group: root
+    mode: 0750
+    timeout: 20
+
+- name: Setting the database configuration for Wordpress
+  shell: "wp --allow-root core config --path='{{ wordpress_dir }}/{{ wordpress_domain }}/' --dbname='{{ wordpress_db }}' --dbuser='{{ wordpress_db_admin }}' --dbpass='{{ wordpress_db_admin_password }}'"
+  register: wp_config
+  failed_when: wp_config['stdout'] is not match '^Success. Generated \'wp-config.php\' file\.$'
+
+- name: Creating the site
+  shell: "wp --allow-root core install --path='{{ wordpress_dir }}/{{ wordpress_domain }}/' --url='https://{{ wordpress_domain }}' --title='{{ wordpress_title }}' --admin_user='{{ wordpress_user }}' --admin_password='{{ wordpress_user_password }}' --admin_email='{{ wordpress_email }}'"
+  register: wp_install
+  failed_when: wp_install['stdout'] is not match '^Success. WordPress installed successfully\.$'
+
+- name: Enabling the theme
+  shell: "wp --allow-root theme install --path='{{ wordpress_dir }}/{{ wordpress_domain }}/' twentyseventeen --activate"
+  register: wp_theme
+  failed_when: wp_theme['stdout'] is not match '^Activating \'twentyseventeen\'\.\.\.\nSuccess. Switched to \'Twenty Seventeen\' theme\.\nSuccess.*'
+
+- name: Setting the right owner and permissions
+  file:
+    path: "{{ wordpress_dir }}/{{ wordpress_domain }}"
+    state: directory
+    recurse: yes
+    owner: www-data
+    group: www-data
+    mode: 0750
+  register: wp_grants
+
+...
