@@ -1,0 +1,81 @@
+---
+
+- name: Updating the repositories
+  apt:
+    update_cache: yes
+    force_apt_get: yes
+
+- name: Installing MariaDB
+  apt:
+    name:
+      - mariadb-server
+      - mariadb-client
+      - python3-mysqldb
+    state: latest
+    force_apt_get: yes
+
+- name: Starting and enabling MariaDB
+  systemd:
+    name: mysql
+    state: started
+    enabled: true
+
+- name: Changing the plugin type for the root user in order to avoid access without password for root user
+  command: mysql -u root -e "UPDATE mysql.user SET plugin='mysql_native_password' WHERE user='root' AND host='localhost'; flush privileges;"
+  register: db_pass
+
+- name: Setting up root password
+  mysql_user:
+    user: root
+    password: "{{ db_root_password }}"
+    host: localhost
+    state: present
+
+- name: "Creating a Database called {{ db_name }}"
+  mysql_db:
+    login_user: "root"
+    login_password: "{{ db_root_password }}"
+    name: "{{ db_name }}"
+    state: present
+    collation: "utf8mb4_general_ci"
+    encoding: "utf8mb4"
+  when: db_creation == "yes" and db_name != ''
+  register: db_new
+
+- name: "Creating the user {{ db_user }} and grant all privileges to the DB {{ db_name }}"
+  mysql_user:
+    login_user: "root"
+    login_password: "{{ db_root_password }}"
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    priv: "{{ db_name}}.*:ALL"
+    state: present
+  when: db_user_creation == 'yes' and db_user != '' and db_password != '' and db_new['changed'] == true
+
+- name: Checking that the SQL file exists in the host
+  local_action: stat path="roles/database/files/{{ db_sql }}"
+  register: file
+  when: db_creation == 'sql'
+
+- name: Creating the database structure through a SQL file
+  block:    
+    - name: Copying the sql file to the server
+      copy:
+        src: "{{ db_sql }}"
+        dest: "/tmp/{{ db_sql }}"
+        remote_src: no
+        owner: root
+        group: root
+        mode: 0640
+
+    - name: Importing database
+      mysql_db:
+        login_user: "root"
+        login_password: "{{ db_root_password }}"
+        state: import
+        name: all
+        #name: "{{ db_name }}"
+        target: "/tmp/{{ db_sql }}"
+  when: db_creation == "sql" and db_sql != '' and file['stat']['exists']
+
+...

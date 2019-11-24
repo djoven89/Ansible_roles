@@ -1,0 +1,14 @@
+---
+
+## Database
+db_root_password: "P@ssw0rd!"
+## Possible values: yes, no, sql
+db_creation: "no"
+db_name: 'db-wp'
+db_sql: ''
+## Possible values: yes, no, sql
+db_user_creation: 'no'
+db_user: 'djoven'
+db_password: 'P@ssw0rd!'
+
+...
