@@ -25,7 +25,7 @@
     upgrade: yes
     force_apt_get: yes
 
-- name: Installing the basic packages
+- name: Installing common packages to manage the server
   apt:
     name:
       - vim
@@ -39,13 +39,13 @@
     state: latest
     force_apt_get: yes
 
-- name: Removing packages for software compilation
+- name: Removing software compilation package
   apt:
     name: build-essential
     state: absent
     force_apt_get: yes
 
-- name: Getting 'vim' path
+- name: Getting 'vim' location
   command: which vim.basic
   register: vim_path
 
@@ -53,7 +53,7 @@
   command: "update-alternatives --set editor {{ vim_path['stdout'] }}"
   register: vim_editor
 
-- name: Adding vim configuration file
+- name: Adding vim configuration file for 'root' user
   copy:
     src: vim_config
     dest: /root/.vimrc
@@ -61,12 +61,12 @@
     group: root
     mode: 0600
 
-- name: Adding color to the shell
+- name: Adding color to the 'root' shell
   lineinfile:
     path: /root/.bashrc
-    line: 'export PS1="\[\033[38;5;1m\]\u\[$(tput sgr0)\]\[\033[38;5;6m\]@\[$(tput sgr0)\]\[\033[38;5;1m\]\h\[$(tput sgr0)\]\[\033[38;5;6m\]:\[$(tput sgr0)\]\[\033[38;5;3m\]\w\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]\[\033[38;5;6m\]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"'
+    line: 'export PS1="\[\033[0;31m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[01;31m\]root\[\033[01;33m\]@\[\033[01;96m\]\h'; else echo '\[\033[0;39m\]\u\[\033[01;33m\]@\[\033[01;96m\]\h'; fi)\[\033[0;31m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;31m\]]\n\[\033[0;31m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]\[\e[01;33m\]\\$\[\e[0m\] "'
 
-- name: Adding an extra option for the history
+- name: Adding some extra parameters to the 'root' history configuration file
   lineinfile:
     path: /root/.bashrc
     regexp: "{{ item.reg }}"
